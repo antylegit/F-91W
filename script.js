@@ -1,12 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // (TEMPORARY, I'M LAZY) MANUALLY HIDE/SHOW OTHER LCD ELEMENTS
-    HIDE_EXTRA = [13, 15];
-
-    HIDE_EXTRA.forEach(id => {
-        const el = document.querySelector(`#lcd > g[id="${id}"]`);
-        if (el) el.style.display = 'none';
-    });
+    // MANUAL CONFIG (TEMPORARY)
+    const format = 1; // 0 = 24H, 1 = 12H
 
     // INITIALIZE SEGMENT MAPS
     const DIGIT_MAP = {
@@ -53,33 +48,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // BUILD SEGMENT LOOKUP: groups[0] ... groups[9] = { a:SVGElement, b:SVGElement, ... }
-    const groups = Array.from(
-        document.querySelectorAll('#lcd > g')
-    ).reduce((acc, g) => {
-        const idx = parseInt(g.id, 10);
-        if (isNaN(idx) || idx < 0 || idx > 9) return acc;
+    // BUILD DIGIT SEGMENT LOOKUP AND ELEMENT MAP
+    const digitGroup = document.querySelector('#lcd > g#digits');
+    const elementGroup = document.querySelector('#lcd > g#elements');
 
-        // MAP EACH SEGMENT ID TO ITS OWN ELEMENT
+    const digits = Array.from(digitGroup.children).reduce((acc, g) => {
+        const idx = Number(g.id);
         const segs = {};
-        g.querySelectorAll('[id]').forEach(el => {
-            segs[el.id] = el;
-        });
+        g.querySelectorAll('[id]').forEach(el => segs[el.id] = el);
         acc[idx] = segs;
         return acc;
     }, []);
 
-    // UTILITY TO SHOW/CLEAR SEGMENTS FOR A GIVEN POSITION (SYMBOL)
-    function setSegments(pos, toShow=[]) {
-        const segs = groups[pos];
-        if (!segs) return;
+    const elementMap = {};
+    Array.from(elementGroup.children).forEach(g => {
+        elementMap[g.id] = [g];
+    });
 
-        // HIDE ALL
-        for (let id in segs) segs[id].style.display = 'none';
+    // UTILITY TO SHOW/CLEAR SEGMENTS FOR A GIVEN DIGIT (ID)
+    function setSegments(id, flags=[]) {
+        const segs = digits[id] || {};
         
-        // SHOW DESIRED ONES
-        toShow.forEach(id => {
-            if (segs[id]) segs[id].style.display = 'inline';
+        // HIDE ALL
+        for (let seg in segs) segs[seg].style.display = 'none';
+        
+        // SHOW FLAGGED ONES
+        flags.forEach(seg => {
+            if (segs[seg]) segs[seg].style.display = 'inline';
+        });
+    }
+
+    // UTILITY TO SHOW/HIDE ELEMENTS BASED ON ID
+    function setElement(id, flag) {
+        (elementMap[id] || []).forEach(el => {
+            el.style.display = flag ? 'inline' : 'none';
         });
     }
 
@@ -87,27 +89,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function getTimeArray() {
         const now = new Date();
 
-        const h = now.getHours();
+        let h = now.getHours();
         const m = now.getMinutes();
         const s = now.getSeconds();
         const d = now.getDate();
         const wd = now.getDay();
-    
+        let pm = false;
+
+        // ACCOUNT FOR 12H FORMAT
+        pm = (h >= 12) && format;
+        h = ((h % (24 - (12 * format))) || 12 * format);
+
         return [
             Math.floor(h/10), h % 10,
             Math.floor(m/10), m % 10,
             Math.floor(s/10), s % 10,
             Math.floor(d/10), d % 10,
-            wd
-        ]
+            wd,
+            pm
+        ];
     }
     
     // UPDATE LOOP
     function update() {
-        const [h1,h2,m1,m2,s1,s2,dd1,dd2,wd] = getTimeArray();
+        const [h1,h2,m1,m2,s1,s2,dd1,dd2,wd,pm] = getTimeArray();
     
         // TIME AND DATE DIGITS
-        setSegments(0, DIGIT_MAP[h1]);
+        setSegments(0, (!h1 && format) ? [] : DIGIT_MAP[h1]); // NO LEADING 0 IF 24H, ONLY IN 12H
         setSegments(1, DIGIT_MAP[h2]);
         setSegments(2, DIGIT_MAP[m1]);
         setSegments(3, DIGIT_MAP[m2]);
@@ -115,13 +123,18 @@ document.addEventListener('DOMContentLoaded', () => {
         setSegments(5, DIGIT_MAP[s2]);
         setSegments(6, DIGIT_MAP[dd1]);
         setSegments(7, DIGIT_MAP[dd2]);
+        setElement(13, pm); // PM INDICATOR
+        setElement(14, !format); // 24H INDICATOR
     
         // WEEKDAY LETTERS
         const dayCfg = WEEKDAY_MAP[wd] || {};
         setSegments(8, dayCfg[8] || []);
         setSegments(9, dayCfg[9] || []);
+
+        // EXTRA (TEMPORARY)
+        setElement(15, false);
     }
     
     update();
-    setInterval(update, 1000);
+    setInterval(update, 100);
 });
