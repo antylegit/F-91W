@@ -1,7 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+// MANUAL CONFIG (TEMPORARY)
+window.format = 1; // 0 = 24H, 1 = 12H
 
-    // MANUAL CONFIG (TEMPORARY)
-    const format = 1; // 0 = 24H, 1 = 12H
+document.addEventListener('DOMContentLoaded', () => {
 
     // INITIALIZE SEGMENT MAPS
     const DIGIT_MAP = {
@@ -97,8 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let pm = false;
 
         // ACCOUNT FOR 12H FORMAT
-        pm = (h >= 12) && format;
-        h = ((h % (24 - (12 * format))) || 12 * format);
+        pm = (h >= 12) && window.format;
+        h = ((h % (24 - (12 * window.format))) || 12 * window.format);
 
         return [
             Math.floor(h/10), h % 10,
@@ -115,16 +115,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const [h1,h2,m1,m2,s1,s2,dd1,dd2,wd,pm] = getTimeArray();
     
         // TIME AND DATE DIGITS
-        setSegments(0, (!h1 && format) ? [] : DIGIT_MAP[h1]); // NO LEADING 0 IF 24H, ONLY IN 12H
+        setSegments(0, (!h1 && window.format) ? [] : DIGIT_MAP[h1]); // NO LEADING 0 IF 24H, ONLY IN 12H
         setSegments(1, DIGIT_MAP[h2]);
         setSegments(2, DIGIT_MAP[m1]);
         setSegments(3, DIGIT_MAP[m2]);
         setSegments(4, DIGIT_MAP[s1]);
         setSegments(5, DIGIT_MAP[s2]);
-        setSegments(6, DIGIT_MAP[dd1 || NaN]); // DO NOT DISPLAY 0 IN FIRST POS
+        setSegments(6, DIGIT_MAP[dd1 || NaN]);
         setSegments(7, DIGIT_MAP[dd2]);
         setElement(13, pm); // PM INDICATOR
-        setElement(14, !format); // 24H INDICATOR
+        setElement(14, !window.format); // 24H INDICATOR
     
         // WEEKDAY LETTERS
         const dayCfg = WEEKDAY_MAP[wd] || {};
@@ -138,4 +138,3 @@ document.addEventListener('DOMContentLoaded', () => {
     update();
     setInterval(update, 100);
 });
-
