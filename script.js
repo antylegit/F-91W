@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setSegments(3, DIGIT_MAP[m2]);
         setSegments(4, DIGIT_MAP[s1]);
         setSegments(5, DIGIT_MAP[s2]);
-        setSegments(6, DIGIT_MAP[dd1]);
+        setSegments(6, DIGIT_MAP[dd1 || NaN]); // DO NOT DISPLAY 0 IN FIRST POS
         setSegments(7, DIGIT_MAP[dd2]);
         setElement(13, pm); // PM INDICATOR
         setElement(14, !format); // 24H INDICATOR
@@ -138,3 +138,4 @@ document.addEventListener('DOMContentLoaded', () => {
     update();
     setInterval(update, 100);
 });
+
